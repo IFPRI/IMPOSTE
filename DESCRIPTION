@@ -1,0 +1,16 @@
+Package: IMPOSTE
+Type: Package
+Title: IMPACT Open-Source Pre-Processor for Trade Balancing Entropy (IMPOSTE)
+Version: 0.1.0
+Authors@R:
+    c(person(given = "Abhijeet",
+             family = "Mishra",
+             role = c("aut", "cre"),
+             email = "A.Mishra@cgiar.org",
+             comment = c(ORCID = "0000-0002-8287-9922")))
+Maintainer: Abhijeet Mishra <A.Mishra@cgiar.org>
+Description: FAOSTAT data processor for Trade Balancing Entropy in IMPACT
+License: GPL (>= 3)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
