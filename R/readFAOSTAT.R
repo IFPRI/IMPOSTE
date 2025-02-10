@@ -8,10 +8,13 @@
 #' @importFrom tidyr pivot_wider
 #' @importFrom openxlsx2 write_xlsx
 #'
-#' @return
+#' @return FAOSTAT cleaned data
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' readFAOSTAT()
+#' }
 readFAOSTAT <- function(data = "crop",
                         entropy_folder,
                         write = FALSE) {
