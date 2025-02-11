@@ -1,24 +1,28 @@
-#' readFoodBalances
+#' readPulses
 #'
 #' @param src Source
 #'
-#' @return FAOSTAT sua table
+#' @return FAOSTAT sua table for pulses (disaggregated)
+#' @importFrom stringr str_extract_all
+#' @importFrom collapse join
+#' @import dplyr tidyr
 #' @export
 #'
 #' @examples
 #' \dontrun{
-#' readFoodBalances()
+#' readPulses()
 #' }
-readFoodBalances <- function(src, data = "sua", write = FALSE) {
+readPulses <- function(srcpath, data = "pulses", write = FALSE) {
 
-    # Its called "SUA" but actually reads food balances data
+    # Pulses (disaggregated) data from SUA
 
     if (write) return <- FALSE
     if (!write) return <- TRUE
 
-    fb <- read.csv(src)
+    src <- "SUA_Crops_Livestock_E_All_Data"
+    pulses <- read.csv(file = paste0(srcpath, "/", src, "/", src, ".csv"))
 
-    df <- fb
+    df <- pulses
 
     names(df) <- tolower(names(df))
 
@@ -48,14 +52,8 @@ readFoodBalances <- function(src, data = "sua", write = FALSE) {
 
     cat("---- Removing data for countries: ", skip_cty_names, sep = "\n")
 
-    keepitem <- c(2615, 2513, 2546, 2731, 2630, 2532, 2633, 2744,
-                  2552, 2732, 2514, 2848, 2517, 2515, 2516, 2520,
-                  2534, 2551, 2642, 2616, 2572, 2576, 2577, 2733,
-                  2531, 2734, 2807, 2574, 2558, 2571, 2573, 2557,
-                  2518, 2555, 2611, 2612, 2613, 2614, 2618, 2619,
-                  2537, 2536, 2542, 2533, 2635, 2617, 2620, 2560,
-                  2561, 2563, 2570, 2575, 2578, 2580, 2586, 2579,
-                  2601, 2602, 2605, 2640, 2641, 2511, 2535)
+    keepitem <- c(203, 213, 181, 212, 211, 210, 197,
+                  205, 176, 187, 201, 195, 191)
 
     skip_items <- unique(df[df$item %nin% keepitem,]$item)
     cat("---- Removing data for items:\n", sort(skip_items), sep = "; ")
@@ -66,14 +64,35 @@ readFoodBalances <- function(src, data = "sua", write = FALSE) {
                      values_to = "value",
                      names_to = "year")
 
+    df$value <- df$value / 1e3
+
+    remove_elements <- df %>%
+        group_by(elementcode, element) %>%
+        summarise(n = n())
+
+    remove_elements$element <- tolower(remove_elements$element)
+
+    remove_elements_vector <-
+        remove_elements[!remove_elements$element %in% c("calories/year",
+                                                        "fats/year",
+                                                        "proteins/year",
+                                                        "opening stocks",
+                                                        "residuals",
+                                                        "tourist consumption"),]
+
+    df <- df[df$elementcode %in% unique(remove_elements_vector$elementcode), ]
+
     df$element <- tolower(df$element)
+
     df$element[df$element %in% "stock variation"] <- "stocks"
-    df$element[df$element %in% "domestic supply quantity"] <- "domestic_supply"
+    df$element[df$element %in% "food supply quantity (tonnes)"] <- "food"
     df$element[df$element %in% "export quantity"] <- "export_quantity"
     df$element[df$element %in% "import quantity"] <- "import_quantity"
     df$element[df$element %in% "other uses (non-food)"] <- "other_demand"
+    df$element[df$element %in% "loss"] <- "losses"
+    df$element[df$element %in% "processed"] <- "processing"
 
-    df <- df %>% replace_na(list(value = 0))
+    df <- df %>% replace_na(value = 0)
 
     df <- df %>% arrange(itemcode, areacode, element)
 
@@ -85,6 +104,8 @@ readFoodBalances <- function(src, data = "sua", write = FALSE) {
                     id_cols = c("areacode", "itemcode", "year"),
                     values_from = value,
                     values_fill = 0)
+
+    df$domestic_supply <- df$production + df$import_quantity - df$export_quantity - df$stocks
 
     df <- df[, c("areacode", "itemcode", "year",
                  "production", "stocks", "food", "feed",
